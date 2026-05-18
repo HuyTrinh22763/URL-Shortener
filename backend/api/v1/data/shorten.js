@@ -10,6 +10,10 @@ const {
   verifyUrl,
 } = require("../../../utils/utils.js");
 const { retrieveOriginalURL } = require("../../../services/urlResolver.js");
+const {
+  setCachedUrl,
+  invalidateCachedUrl,
+} = require("../../../services/urlCache.js");
 const { toShortenData } = require("../../../utils/shortenPayload.js");
 
 router.post("/shorten", async (req, res) => {
@@ -53,13 +57,20 @@ router.post("/shorten", async (req, res) => {
         },
       });
     }
+    const createdAt = new Date().toISOString();
+    // Store in Redis Cache
+    await setCachedUrl(shortCode, {
+      id: uniqueID,
+      longURL: verified.longURL,
+      created_at: createdAt,
+    });
     return res.status(201).json({
       success: true,
       data: toShortenData({
         id: uniqueID,
         shortCode,
         longURL: verified.longURL,
-        createdAt: new Date().toISOString(),
+        createdAt,
       }),
     });
   } catch (e) {
@@ -153,6 +164,12 @@ router.put("/shorten/:code", async (req, res) => {
         },
       });
     }
+    await invalidateCachedUrl(shortCode);
+    await setCachedUrl(shortCode, {
+      id: found.id,
+      longURL: verified.longURL,
+      created_at: found.created_at,
+    });
     return res.status(200).json({
       success: true,
       data: toShortenData({
@@ -191,6 +208,7 @@ router.delete("/shorten/:code", async (req, res) => {
         },
       });
     }
+    // Delete record from Relational DB
     const deletedRecord = await deleteRecord(shortCode);
     if (!deletedRecord) {
       return res.status(400).json({
@@ -202,6 +220,8 @@ router.delete("/shorten/:code", async (req, res) => {
         },
       });
     }
+    // Delete key from Redis Cache
+    await invalidateCachedUrl(shortCode);
     return res.status(204).end();
   } catch (e) {
     console.error(e);

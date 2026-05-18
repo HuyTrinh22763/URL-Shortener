@@ -6,3 +6,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: url_shortener
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
