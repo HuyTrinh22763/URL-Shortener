@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>URL Shortener Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <p class="badge">Playground</p>
+        <h1>URL Shortener Tester</h1>
+        <p class="subtitle">
+          Rút gọn URL qua API backend và xem lịch sử các link đã tạo.
+        </p>
+
+        <form id="shorten-form" class="shorten-form">
+          <label for="long-url">URL cần rút gọn</label>
+          <div class="input-row">
+            <input
+              id="long-url"
+              name="longUrl"
+              type="url"
+              placeholder="https://example.com/some/very/long/path"
+              required
+            />
+            <button type="submit">Shorten</button>
+          </div>
+          <p id="form-message" class="form-message"></p>
+        </form>
+
+        <section id="result" class="result hidden" aria-live="polite">
+          <h2>Kết quả</h2>
+          <div class="result-grid">
+            <div>
+              <span class="label">Original URL</span>
+              <p id="original-url" class="value"></p>
+            </div>
+            <div>
+              <span class="label">Short URL</span>
+              <p id="short-url" class="value link"></p>
+            </div>
+          </div>
+          <button id="copy-btn" type="button" class="copy-btn">Copy short URL</button>
+        </section>
+      </section>
+
+      <section class="history card">
+        <div class="history-header">
+          <h2>Lịch sử</h2>
+          <button id="clear-history" type="button" class="ghost-btn">Clear</button>
+        </div>
+        <ul id="history-list" class="history-list">
+          <li class="empty-state">Chưa có URL nào được tạo.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
