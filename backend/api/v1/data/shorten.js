@@ -15,8 +15,9 @@ const {
   invalidateCachedUrl,
 } = require("../../../services/urlCache.js");
 const { toShortenData } = require("../../../utils/shortenPayload.js");
+const rateLimitCreate = require("../../../middleware/rateLimitCreate.js");
 
-router.post("/shorten", async (req, res) => {
+router.post("/shorten", rateLimitCreate, async (req, res) => {
   try {
     const longURL = req.body["longURL"];
 

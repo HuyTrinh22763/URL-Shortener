@@ -2,7 +2,10 @@ const express = require("express");
 const app = express();
 const router = require("./api/v1/data/shorten.js");
 const { retrieveOriginalURL } = require("./services/urlResolver.js");
+const rateLimitRedirect = require("./middleware/rateLimitRedirect.js");
 const cors = require("cors");
+
+app.set("trust proxy", 1);
 app.use(cors({ credentials: true }));
 app.use(express.json());
 
@@ -15,7 +18,7 @@ app.get("/health", (req, res) => {
 
 app.use("/api/v1/data", router);
 
-app.get("/:shortCode", async (req, res) => {
+app.get("/:shortCode", rateLimitRedirect, async (req, res) => {
   try {
     const found = await retrieveOriginalURL(req.params.shortCode);
     if (!found) {
