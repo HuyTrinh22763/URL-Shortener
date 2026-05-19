@@ -1,12 +1,24 @@
+const path = require("path");
 const express = require("express");
 const app = express();
 const router = require("./api/v1/data/shorten.js");
 const { retrieveOriginalURL } = require("./services/urlResolver.js");
+const { setTimingHeaders } = require("./utils/timingHeaders.js");
 const rateLimitRedirect = require("./middleware/rateLimitRedirect.js");
 const cors = require("cors");
 
 app.set("trust proxy", 1);
-app.use(cors({ credentials: true }));
+app.use(
+  cors({
+    credentials: true,
+    exposedHeaders: [
+      "Location",
+      "Retry-After",
+      "X-Resolve-Time-Ms",
+      "X-Cache-Status",
+    ],
+  }),
+);
 app.use(express.json());
 
 app.get("/health", (req, res) => {
@@ -18,10 +30,16 @@ app.get("/health", (req, res) => {
 
 app.use("/api/v1/data", router);
 
+// same-origin playground — redirect manual cần đọc được Location
+app.use("/playground", express.static(path.join(__dirname, "../frontend")));
+
 app.get("/:shortCode", rateLimitRedirect, async (req, res) => {
   try {
-    const found = await retrieveOriginalURL(req.params.shortCode);
-    if (!found) {
+    const { row, resolveMs, cacheStatus } = await retrieveOriginalURL(
+      req.params.shortCode,
+    );
+    setTimingHeaders(res, resolveMs, cacheStatus);
+    if (!row) {
       return res.status(404).json({
         success: false,
         error: {
@@ -32,7 +50,7 @@ app.get("/:shortCode", rateLimitRedirect, async (req, res) => {
       });
     }
     // Syntax to redirect to a given URL
-    return res.redirect(302, found.longURL);
+    return res.redirect(302, row.longURL);
   } catch (e) {
     console.error(e);
     if (!res.headersSent) {

@@ -4,65 +4,73 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>URL Shortener Playground</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="page">
       <section class="card">
-        <p class="badge">Playground</p>
-        <h1>URL Shortener Tester</h1>
-        <p class="subtitle">
-          Rút gọn URL qua API backend và xem lịch sử các link đã tạo.
-        </p>
+        <h1>URL Shortener Playground</h1>
 
-        <form id="shorten-form" class="shorten-form">
-          <label for="long-url">URL cần rút gọn</label>
-          <div class="input-row">
-            <input
-              id="long-url"
-              name="longUrl"
-              type="url"
-              placeholder="https://example.com/some/very/long/path"
-              required
-            />
-            <button type="submit">Shorten</button>
-          </div>
-          <p id="form-message" class="form-message"></p>
-        </form>
+        <label for="api-base">API base</label>
+        <input id="api-base" type="text" class="full-input" />
 
-        <section id="result" class="result hidden" aria-live="polite">
-          <h2>Kết quả</h2>
-          <div class="result-grid">
-            <div>
-              <span class="label">Original URL</span>
-              <p id="original-url" class="value"></p>
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" data-tab="create">Create</button>
+          <button type="button" class="tab" data-tab="redirect">Redirect</button>
+        </div>
+
+        <div id="panel-create" class="panel">
+          <form id="create-form" class="form">
+            <label for="long-url">longURL</label>
+            <div class="input-row">
+              <input
+                id="long-url"
+                type="url"
+                placeholder="https://example.com/path"
+                required
+              />
+              <button type="submit">Send</button>
             </div>
-            <div>
-              <span class="label">Short URL</span>
-              <p id="short-url" class="value link"></p>
+          </form>
+          <p id="create-message" class="form-message"></p>
+          <section id="result" class="result hidden">
+            <p><span class="label">Original</span> <span id="original-url"></span></p>
+            <p><span class="label">Short</span> <span id="short-url" class="link"></span></p>
+            <button id="copy-btn" type="button" class="ghost-btn">Copy</button>
+          </section>
+        </div>
+
+        <div id="panel-redirect" class="panel hidden">
+          <form id="redirect-form" class="form">
+            <label for="short-code">shortCode (hoặc full short URL)</label>
+            <div class="input-row">
+              <input id="short-code" type="text" placeholder="abc12" required />
+              <button type="submit">Send</button>
             </div>
+          </form>
+        </div>
+
+        <section id="response" class="response hidden">
+          <div class="response-meta">
+            <span id="response-status">—</span>
+            <span id="response-time">—</span>
+            <span id="response-cache">—</span>
           </div>
-          <button id="copy-btn" type="button" class="copy-btn">Copy short URL</button>
+          <h2>Headers</h2>
+          <pre id="response-headers" class="code-block"></pre>
+          <h2>Body</h2>
+          <pre id="response-body" class="code-block"></pre>
         </section>
       </section>
 
-      <section class="history card">
+      <section class="card">
         <div class="history-header">
-          <h2>Lịch sử</h2>
+          <h2>History</h2>
           <button id="clear-history" type="button" class="ghost-btn">Clear</button>
         </div>
-        <ul id="history-list" class="history-list">
-          <li class="empty-state">Chưa có URL nào được tạo.</li>
-        </ul>
+        <ul id="history-list" class="history-list"></ul>
       </section>
     </main>
-
     <script src="./app.js"></script>
   </body>
 </html>

@@ -15,14 +15,18 @@ const {
   invalidateCachedUrl,
 } = require("../../../services/urlCache.js");
 const { toShortenData } = require("../../../utils/shortenPayload.js");
+const { setTimingHeaders } = require("../../../utils/timingHeaders.js");
 const rateLimitCreate = require("../../../middleware/rateLimitCreate.js");
 
 router.post("/shorten", rateLimitCreate, async (req, res) => {
+  const t0 = performance.now();
+  let cacheStatus = "-";
   try {
     const longURL = req.body["longURL"];
 
     const verified = verifyUrl(longURL);
     if (!verified.success) {
+      setTimingHeaders(res, performance.now() - t0, cacheStatus);
       return res.status(400).json({
         success: false,
         error: {
@@ -35,6 +39,8 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
 
     const foundRecord = await checkUrlInDB(verified.longURL);
     if (foundRecord) {
+      cacheStatus = "SKIP";
+      setTimingHeaders(res, performance.now() - t0, cacheStatus);
       return res.status(200).json({
         success: true,
         data: toShortenData({
@@ -49,6 +55,7 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
     const addURL = await addUrlToDB(uniqueID, shortCode, verified.longURL);
 
     if (!addURL) {
+      setTimingHeaders(res, performance.now() - t0, cacheStatus);
       return res.status(500).json({
         success: false,
         error: {
@@ -65,6 +72,8 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
       longURL: verified.longURL,
       created_at: createdAt,
     });
+    cacheStatus = "WARM";
+    setTimingHeaders(res, performance.now() - t0, cacheStatus);
     return res.status(201).json({
       success: true,
       data: toShortenData({
@@ -77,6 +86,7 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
   } catch (e) {
     console.error(e);
     if (!res.headersSent) {
+      setTimingHeaders(res, performance.now() - t0, cacheStatus);
       return res.status(500).json({
         success: false,
         error: {
@@ -92,8 +102,10 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
 router.get("/shorten/:code", async (req, res) => {
   try {
     const shortCode = req.params.code;
-    const found = await retrieveOriginalURL(shortCode);
-    if (!found) {
+    const { row, resolveMs, cacheStatus } =
+      await retrieveOriginalURL(shortCode);
+    setTimingHeaders(res, resolveMs, cacheStatus);
+    if (!row) {
       return res.status(404).json({
         success: false,
         error: {
@@ -106,10 +118,10 @@ router.get("/shorten/:code", async (req, res) => {
     return res.status(200).json({
       success: true,
       data: toShortenData({
-        id: found.id,
+        id: row.id,
         shortCode,
-        longURL: found.longURL,
-        createdAt: found.created_at,
+        longURL: row.longURL,
+        createdAt: row.created_at,
       }),
     });
   } catch (e) {
@@ -143,8 +155,10 @@ router.put("/shorten/:code", async (req, res) => {
       });
     }
 
-    const found = await retrieveOriginalURL(shortCode);
-    if (!found) {
+    const { row, resolveMs, cacheStatus } =
+      await retrieveOriginalURL(shortCode);
+    setTimingHeaders(res, resolveMs, cacheStatus);
+    if (!row) {
       return res.status(404).json({
         success: false,
         error: {
@@ -167,17 +181,17 @@ router.put("/shorten/:code", async (req, res) => {
     }
     await invalidateCachedUrl(shortCode);
     await setCachedUrl(shortCode, {
-      id: found.id,
+      id: row.id,
       longURL: verified.longURL,
-      created_at: found.created_at,
+      created_at: row.created_at,
     });
     return res.status(200).json({
       success: true,
       data: toShortenData({
-        id: found.id,
+        id: row.id,
         shortCode,
         longURL: verified.longURL,
-        createdAt: found.created_at,
+        createdAt: row.created_at,
       }),
     });
   } catch (e) {
@@ -198,8 +212,10 @@ router.put("/shorten/:code", async (req, res) => {
 router.delete("/shorten/:code", async (req, res) => {
   try {
     const shortCode = req.params.code;
-    const found = await retrieveOriginalURL(shortCode);
-    if (!found) {
+    const { row, resolveMs, cacheStatus } =
+      await retrieveOriginalURL(shortCode);
+    setTimingHeaders(res, resolveMs, cacheStatus);
+    if (!row) {
       return res.status(404).json({
         success: false,
         error: {
