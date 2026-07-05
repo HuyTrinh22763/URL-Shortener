@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { pool } = require("../../../config/db.js");
 const {
   checkUrlInDB,
   stringToBase62,
@@ -87,6 +88,53 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
     console.error(e);
     if (!res.headersSent) {
       setTimingHeaders(res, performance.now() - t0, cacheStatus);
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Internal server error",
+          details: [],
+        },
+      });
+    }
+  }
+});
+
+router.get("/shorten/:code/stats", async (req, res) => {
+  try {
+    const shortCode = req.params.code;
+    const [urlRows] = await pool.query(
+      "SELECT id FROM urls WHERE shortCode = ? LIMIT 1",
+      [shortCode],
+    );
+    if (urlRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: "URL_NOT_FOUND",
+          message: "Original url not found",
+          details: [],
+        },
+      });
+    }
+    const [stats] = await pool.query(
+      "SELECT COUNT(*) AS clickCount, MAX(clickedAt) AS lastClickedAt FROM clicks WHERE shortCode = ?",
+      [shortCode],
+    );
+    const row = stats[0];
+    return res.status(200).json({
+      success: true,
+      data: {
+        shortCode,
+        clickCount: Number(row.clickCount) || 0,
+        lastClickedAt: row.lastClickedAt
+          ? new Date(row.lastClickedAt).toISOString()
+          : null,
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    if (!res.headersSent) {
       return res.status(500).json({
         success: false,
         error: {
