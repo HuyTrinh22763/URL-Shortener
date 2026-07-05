@@ -5,6 +5,8 @@ const router = require("./api/v1/data/shorten.js");
 const { retrieveOriginalURL } = require("./services/urlResolver.js");
 const { setTimingHeaders } = require("./utils/timingHeaders.js");
 const rateLimitRedirect = require("./middleware/rateLimitRedirect.js");
+const { getClientIp } = require("./services/rateLimit.js");
+const { publishClickEvent } = require("./services/analytics.js");
 const cors = require("cors");
 
 app.set("trust proxy", 1);
@@ -49,7 +51,12 @@ app.get("/:shortCode", rateLimitRedirect, async (req, res) => {
         },
       });
     }
-    // Syntax to redirect to a given URL
+    publishClickEvent({
+      shortCode: req.params.shortCode,
+      clickedAt: new Date().toISOString(),
+      clientIp: getClientIp(req),
+      cacheStatus,
+    });
     return res.redirect(302, row.longURL);
   } catch (e) {
     console.error(e);
