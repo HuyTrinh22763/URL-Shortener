@@ -2,7 +2,7 @@ const HISTORY_KEY = "urlShortenerHistory";
 const HISTORY_LIMIT = 8;
 
 const apiBaseInput = document.getElementById("api-base");
-const tabs = document.querySelectorAll(".tab");
+const tabs = document.querySelectorAll(".section-playground .inner-link.tab");
 const panelCreate = document.getElementById("panel-create");
 const panelRedirect = document.getElementById("panel-redirect");
 const createForm = document.getElementById("create-form");
@@ -22,7 +22,8 @@ const historyList = document.getElementById("history-list");
 const clearHistoryBtn = document.getElementById("clear-history");
 
 function defaultApiBase() {
-  if (window.location.pathname.startsWith("/playground")) {
+  const path = window.location.pathname;
+  if (path.includes("playground")) {
     return window.location.origin;
   }
   return "http://localhost:6001";
@@ -134,7 +135,7 @@ function renderHistory() {
 
   if (history.length === 0) {
     const emptyItem = document.createElement("li");
-    emptyItem.className = "empty-state";
+    emptyItem.className = "inner-item empty-state";
     emptyItem.textContent = "Chưa có URL nào được tạo.";
     historyList.appendChild(emptyItem);
     return;
@@ -142,6 +143,7 @@ function renderHistory() {
 
   history.forEach((item) => {
     const li = document.createElement("li");
+    li.className = "inner-item";
 
     const original = document.createElement("span");
     original.textContent = item.original;
@@ -178,7 +180,6 @@ function showResult(longUrl, fullShort) {
   resultSection.classList.remove("hidden");
 }
 
-// Phục vục cho 2 nút Create và Redirect để chuyển mode trên FE
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     tabs.forEach((t) => t.classList.remove("active"));
@@ -241,7 +242,6 @@ redirectForm.addEventListener("submit", async (e) => {
     );
     renderResponse(result);
     if (result.status === 200 && result.body?.data?.longURL) {
-      // Khi click Send thì jump sang tab khác với longURL, thể hiện thông số ở giao diện
       window.open(result.body.data.longURL, "_blank", "noopener,noreferrer");
     }
   } catch (err) {
@@ -252,8 +252,6 @@ redirectForm.addEventListener("submit", async (e) => {
 copyBtn.addEventListener("click", async () => {
   const text = shortUrlEl.textContent.trim();
   if (text) {
-    // Clipboard API giúp ghi chép clipboard/text hệ thống
-    // API này trả ra một Promise
     await navigator.clipboard.writeText(text).catch(() => {});
   }
 });

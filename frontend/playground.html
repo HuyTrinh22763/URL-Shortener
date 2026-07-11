@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shortly — Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <div class="inner-wrap">
+          <a class="inner-link brand" href="/login">Shortly</a>
+          <nav class="inner-links" aria-label="Chính">
+            <a class="inner-link" href="/login">Đăng nhập</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+    <!-- End Header -->
+
+    <!-- Section Playground -->
+    <div class="section-playground">
+      <div class="container">
+        <div class="inner-wrap">
+          <div class="inner-item">
+            <h1 class="inner-title-main">URL Shortener Playground</h1>
+
+            <label class="inner-label" for="api-base">API base</label>
+            <input id="api-base" type="text" class="inner-input" />
+
+            <div class="inner-links tabs" role="tablist">
+              <button
+                type="button"
+                class="inner-link tab active"
+                data-tab="create"
+              >
+                Create
+              </button>
+              <button type="button" class="inner-link tab" data-tab="redirect">
+                Redirect
+              </button>
+            </div>
+
+            <div id="panel-create" class="inner-panel">
+              <form id="create-form" class="inner-form">
+                <label class="inner-label" for="long-url">longURL</label>
+                <div class="inner-row">
+                  <input
+                    id="long-url"
+                    class="inner-input"
+                    type="url"
+                    placeholder="https://example.com/path"
+                    required
+                  />
+                  <button type="submit" class="inner-submit-btn">Send</button>
+                </div>
+              </form>
+              <p id="create-message" class="inner-desc message"></p>
+              <div id="result" class="inner-result hidden">
+                <p>
+                  <span class="inner-tag">Original</span>
+                  <span id="original-url"></span>
+                </p>
+                <p>
+                  <span class="inner-tag">Short</span>
+                  <span id="short-url"></span>
+                </p>
+                <button
+                  id="copy-btn"
+                  type="button"
+                  class="inner-submit-btn ghost"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <div id="panel-redirect" class="inner-panel hidden">
+              <form id="redirect-form" class="inner-form">
+                <label class="inner-label" for="short-code"
+                  >shortCode (hoặc full short URL)</label
+                >
+                <div class="inner-row">
+                  <input
+                    id="short-code"
+                    class="inner-input"
+                    type="text"
+                    placeholder="abc12"
+                    required
+                  />
+                  <button type="submit" class="inner-submit-btn">Send</button>
+                </div>
+              </form>
+            </div>
+
+            <div id="response" class="inner-response hidden">
+              <div class="inner-meta">
+                <span id="response-status">—</span>
+                <span id="response-time">—</span>
+                <span id="response-cache">—</span>
+              </div>
+              <h2 class="inner-title">Headers</h2>
+              <pre id="response-headers" class="inner-code"></pre>
+              <h2 class="inner-title">Body</h2>
+              <pre id="response-body" class="inner-code"></pre>
+            </div>
+          </div>
+
+          <div class="inner-item">
+            <div class="inner-header-row">
+              <h2 class="inner-title">History</h2>
+              <button
+                id="clear-history"
+                type="button"
+                class="inner-submit-btn ghost"
+              >
+                Clear
+              </button>
+            </div>
+            <ul id="history-list" class="inner-list"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- End Section Playground -->
+
+    <script src="/playground.js"></script>
+  </body>
+</html>
