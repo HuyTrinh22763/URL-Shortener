@@ -47,6 +47,12 @@ function createApp() {
 
   // Frontend pages (login.html / playground.html) + shared assets
   const frontendDir = path.join(__dirname, "../frontend");
+  app.get("/", (req, res) => {
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      return res.redirect(302, "/playground");
+    }
+    return res.redirect(302, "/login");
+  });
   app.get(["/login", "/login/"], (req, res) => {
     res.sendFile(path.join(frontendDir, "login.html"));
   });
