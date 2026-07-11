@@ -1,9 +1,9 @@
 require("dotenv").config();
-const app = require("./app.js");
 const port = process.env.PORT || 3000;
 const { testDbConnection } = require("./config/db.js");
 const { connectRedis, testRedisConnection } = require("./config/redis.js");
 const { connectProducer } = require("./config/kafka.js");
+const { createApp } = require("./app.js");
 
 // Tất cả chỉ chạy khi docker chạy
 async function start() {
@@ -19,6 +19,9 @@ async function start() {
     } catch (e) {
       console.error("Kafka producer:", e.message);
     }
+
+    // Session store needs Redis; create app only after connectRedis()
+    const app = createApp();
     app.listen(port, () => {
       console.log(`Server started successfully on port ${port}`);
     });
