@@ -13,13 +13,17 @@
   },
   "dependencies": {
     "base62": "^2.0.2",
+    "connect-redis": "^9.0.0",
     "cors": "^2.8.6",
     "crypto": "^1.0.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
     "httpie": "^1.1.2",
     "kafkajs": "^2.2.4",
     "mysql2": "^3.22.3",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "redis": "^5.12.1"
   }
 }
