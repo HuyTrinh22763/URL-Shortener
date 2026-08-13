@@ -3,11 +3,10 @@ const crypto = require("crypto");
 const CHARSET =
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-async function checkUrlInDB(longURL) {
-  // dedup theo longURL — khi shard cần global index hoặc query đa shard
+async function checkUrlInDB(longURL, userId) {
   const [result] = await pool.query(
-    "SELECT id, shortCode, created_at FROM urls WHERE longURL = ? LIMIT 1",
-    [longURL],
+    "SELECT id, shortCode, created_at, user_id FROM urls WHERE longURL = ? AND user_id = ? LIMIT 1",
+    [longURL, userId],
   );
   if (result.length > 0) {
     return result[0];
@@ -15,10 +14,10 @@ async function checkUrlInDB(longURL) {
   return null;
 }
 
-async function addUrlToDB(id, shortCode, longURL) {
+async function addUrlToDB(id, shortCode, longURL, userId) {
   const [result] = await pool.query(
-    "INSERT INTO urls (id, shortCode, longURL) VALUES (?, ?, ?)",
-    [id, shortCode, longURL],
+    "INSERT INTO urls (id, user_id, shortCode, longURL) VALUES (?, ?, ?, ?)",
+    [id, userId, shortCode, longURL],
   );
   if (result.affectedRows > 0) {
     return true;
@@ -26,21 +25,23 @@ async function addUrlToDB(id, shortCode, longURL) {
   return false;
 }
 
-async function updateOriginalURL(shortCode, newLongURL) {
-  const [result] = await pool.query(
-    "UPDATE urls SET longURL = ? WHERE shortCode = ?",
-    [newLongURL, shortCode],
+async function updateOriginalURL(shortCode, newLongURL, userId) {
+  await pool.query(
+    "UPDATE urls SET longURL = ? WHERE shortCode = ? AND user_id = ?",
+    [newLongURL, shortCode, userId],
   );
-  if (result.affectedRows > 0) {
-    return true;
-  }
-  return false;
+  const [rows] = await pool.query(
+    "SELECT id, user_id, shortCode, longURL, created_at FROM urls WHERE shortCode = ? AND user_id = ? LIMIT 1",
+    [shortCode, userId],
+  );
+  return rows[0] || null;
 }
 
-async function deleteRecord(shortCode) {
-  const [result] = await pool.query("DELETE FROM urls WHERE shortCode = ?", [
-    shortCode,
-  ]);
+async function deleteRecord(shortCode, userId) {
+  const [result] = await pool.query(
+    "DELETE FROM urls WHERE shortCode = ? AND user_id = ?",
+    [shortCode, userId],
+  );
   if (result.affectedRows > 0) {
     return true;
   }

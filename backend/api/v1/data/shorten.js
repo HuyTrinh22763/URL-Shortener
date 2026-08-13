@@ -10,7 +10,6 @@ const {
   deleteRecord,
   verifyUrl,
 } = require("../../../utils/utils.js");
-const { retrieveOriginalURL } = require("../../../services/urlResolver.js");
 const {
   setCachedUrl,
   invalidateCachedUrl,
@@ -41,7 +40,8 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
       });
     }
 
-    const foundRecord = await checkUrlInDB(verified.longURL);
+    const userId = req.user.id;
+    const foundRecord = await checkUrlInDB(verified.longURL, userId);
     if (foundRecord) {
       cacheStatus = "SKIP";
       setTimingHeaders(res, performance.now() - t0, cacheStatus);
@@ -49,6 +49,7 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
         success: true,
         data: toShortenData({
           id: foundRecord.id,
+          userId,
           shortCode: foundRecord.shortCode,
           createdAt: foundRecord.created_at,
         }),
@@ -56,7 +57,7 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
     }
     const uniqueID = uniqueIdGenerator();
     const shortCode = stringToBase62(uniqueID);
-    const addURL = await addUrlToDB(uniqueID, shortCode, verified.longURL);
+    const addURL = await addUrlToDB(uniqueID, shortCode, verified.longURL, userId);
 
     if (!addURL) {
       setTimingHeaders(res, performance.now() - t0, cacheStatus);
@@ -82,6 +83,7 @@ router.post("/shorten", rateLimitCreate, async (req, res) => {
       success: true,
       data: toShortenData({
         id: uniqueID,
+        userId,
         shortCode,
         longURL: verified.longURL,
         createdAt,
@@ -107,8 +109,8 @@ router.get("/shorten/:code/stats", async (req, res) => {
   try {
     const shortCode = req.params.code;
     const [urlRows] = await pool.query(
-      "SELECT id FROM urls WHERE shortCode = ? LIMIT 1",
-      [shortCode],
+      "SELECT id FROM urls WHERE shortCode = ? AND user_id = ? LIMIT 1",
+      [shortCode, req.user.id],
     );
     if (urlRows.length === 0) {
       return res.status(404).json({
@@ -153,10 +155,11 @@ router.get("/shorten/:code/stats", async (req, res) => {
 router.get("/shorten/:code", async (req, res) => {
   try {
     const shortCode = req.params.code;
-    const { row, resolveMs, cacheStatus } =
-      await retrieveOriginalURL(shortCode);
-    setTimingHeaders(res, resolveMs, cacheStatus);
-    if (!row) {
+    const [rows] = await pool.query(
+      "SELECT id, longURL, created_at FROM urls WHERE shortCode = ? AND user_id = ? LIMIT 1",
+      [shortCode, req.user.id],
+    );
+    if (rows.length === 0) {
       return res.status(404).json({
         success: false,
         error: {
@@ -166,10 +169,12 @@ router.get("/shorten/:code", async (req, res) => {
         },
       });
     }
+    const row = rows[0];
     return res.status(200).json({
       success: true,
       data: toShortenData({
         id: row.id,
+        user_id: req.user.id,
         shortCode,
         longURL: row.longURL,
         createdAt: row.created_at,
@@ -206,9 +211,11 @@ router.put("/shorten/:code", async (req, res) => {
       });
     }
 
-    const { row, resolveMs, cacheStatus } =
-      await retrieveOriginalURL(shortCode);
-    setTimingHeaders(res, resolveMs, cacheStatus);
+    const row = await updateOriginalURL(
+      shortCode,
+      verified.longURL,
+      req.user.id,
+    );
     if (!row) {
       return res.status(404).json({
         success: false,
@@ -219,29 +226,19 @@ router.put("/shorten/:code", async (req, res) => {
         },
       });
     }
-    const result = await updateOriginalURL(shortCode, verified.longURL);
-    if (!result) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: "UPDATE_FAILURE",
-          message: "Failed to update new URL",
-          details: [],
-        },
-      });
-    }
     await invalidateCachedUrl(shortCode);
     await setCachedUrl(shortCode, {
       id: row.id,
-      longURL: verified.longURL,
+      longURL: row.longURL,
       created_at: row.created_at,
     });
     return res.status(200).json({
       success: true,
       data: toShortenData({
         id: row.id,
+        userId: req.user.id,
         shortCode,
-        longURL: verified.longURL,
+        longURL: row.longURL,
         createdAt: row.created_at,
       }),
     });
@@ -263,27 +260,13 @@ router.put("/shorten/:code", async (req, res) => {
 router.delete("/shorten/:code", async (req, res) => {
   try {
     const shortCode = req.params.code;
-    const { row, resolveMs, cacheStatus } =
-      await retrieveOriginalURL(shortCode);
-    setTimingHeaders(res, resolveMs, cacheStatus);
-    if (!row) {
+    const deletedRecord = await deleteRecord(shortCode, req.user.id);
+    if (!deletedRecord) {
       return res.status(404).json({
         success: false,
         error: {
           code: "URL_NOT_FOUND",
           message: "Original url not found",
-          details: [],
-        },
-      });
-    }
-    // Delete record from Relational DB
-    const deletedRecord = await deleteRecord(shortCode);
-    if (!deletedRecord) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: "DELETE_FAILURE",
-          message: "Delete failure",
           details: [],
         },
       });

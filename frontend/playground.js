@@ -1,5 +1,6 @@
 const HISTORY_KEY = "urlShortenerHistory";
 const HISTORY_LIMIT = 8;
+let historyUserId = null;
 
 const apiBaseInput = document.getElementById("api-base");
 const tabs = document.querySelectorAll(".section-playground .inner-link.tab");
@@ -44,7 +45,10 @@ function headersToObject(res) {
 }
 
 async function sendRequest(url, options = {}) {
-  const res = await fetch(url, options);
+  const res = await fetch(url, {
+    credentials: "same-origin",
+    ...options,
+  });
   const text = await res.text();
   let body = text;
   if (text) {
@@ -112,9 +116,15 @@ function displayShortUrl(data) {
   return "";
 }
 
+function historyStorageKey() {
+  return historyUserId
+    ? `urlShortenerHistory:${historyUserId}`
+    : HISTORY_KEY;
+}
+
 function loadHistory() {
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
+    const raw = localStorage.getItem(historyStorageKey());
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -124,7 +134,7 @@ function loadHistory() {
 
 function saveHistory(items) {
   localStorage.setItem(
-    HISTORY_KEY,
+    historyStorageKey(),
     JSON.stringify(items.slice(0, HISTORY_LIMIT)),
   );
 }
@@ -257,8 +267,22 @@ copyBtn.addEventListener("click", async () => {
 });
 
 clearHistoryBtn.addEventListener("click", () => {
-  localStorage.removeItem(HISTORY_KEY);
+  localStorage.removeItem(historyStorageKey());
   renderHistory();
 });
 
-renderHistory();
+async function initHistory() {
+  localStorage.removeItem(HISTORY_KEY);
+  try {
+    const res = await fetch("/api/v1/auth/me", { credentials: "same-origin" });
+    if (res.ok) {
+      const payload = await res.json();
+      historyUserId = payload?.data?.id ?? null;
+    }
+  } catch {
+    historyUserId = null;
+  }
+  renderHistory();
+}
+
+initHistory();
