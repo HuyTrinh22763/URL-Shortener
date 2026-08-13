@@ -1,6 +1,6 @@
-const HISTORY_KEY = "urlShortenerHistory";
 const HISTORY_LIMIT = 8;
 let historyUserId = null;
+let HISTORY_KEY = null;
 
 const apiBaseInput = document.getElementById("api-base");
 const tabs = document.querySelectorAll(".section-playground .inner-link.tab");
@@ -116,15 +116,12 @@ function displayShortUrl(data) {
   return "";
 }
 
-function historyStorageKey() {
-  return historyUserId
-    ? `urlShortenerHistory:${historyUserId}`
-    : HISTORY_KEY;
-}
+
 
 function loadHistory() {
   try {
-    const raw = localStorage.getItem(historyStorageKey());
+    if (!HISTORY_KEY) throw new Error();
+    const raw = localStorage.getItem(HISTORY_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -133,8 +130,9 @@ function loadHistory() {
 }
 
 function saveHistory(items) {
+  if (!HISTORY_KEY) return;
   localStorage.setItem(
-    historyStorageKey(),
+    HISTORY_KEY,
     JSON.stringify(items.slice(0, HISTORY_LIMIT)),
   );
 }
@@ -170,6 +168,7 @@ function renderHistory() {
 
 function prependHistory(entry) {
   const history = loadHistory();
+  // Add to head
   history.unshift(entry);
   saveHistory(history);
   renderHistory();
@@ -267,20 +266,21 @@ copyBtn.addEventListener("click", async () => {
 });
 
 clearHistoryBtn.addEventListener("click", () => {
-  localStorage.removeItem(historyStorageKey());
+  localStorage.removeItem(HISTORY_KEY);
   renderHistory();
 });
 
+// After user logs in, initHistory() comes find the userID and setup the private user history
 async function initHistory() {
-  localStorage.removeItem(HISTORY_KEY);
   try {
     const res = await fetch("/api/v1/auth/me", { credentials: "same-origin" });
     if (res.ok) {
       const payload = await res.json();
       historyUserId = payload?.data?.id ?? null;
+      HISTORY_KEY = `urlShortenerHistory:${historyUserId}`
     }
   } catch {
-    historyUserId = null;
+    HISTORY_KEY = null;
   }
   renderHistory();
 }
