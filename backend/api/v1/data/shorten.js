@@ -18,6 +18,9 @@ const {
 const { toShortenData } = require("../../../utils/shortenPayload.js");
 const { setTimingHeaders } = require("../../../utils/timingHeaders.js");
 const rateLimitCreate = require("../../../middleware/rateLimitCreate.js");
+const ensureAuthenticated = require("../../../middleware/ensureAuthenticated.js");
+
+router.use(ensureAuthenticated);
 
 router.post("/shorten", rateLimitCreate, async (req, res) => {
   const t0 = performance.now();
