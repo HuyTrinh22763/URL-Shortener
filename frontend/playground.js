@@ -246,12 +246,12 @@ redirectForm.addEventListener("submit", async (e) => {
   }
   try {
     const result = await sendRequest(
-      `${getApiBase()}/api/v1/data/shorten/${encodeURIComponent(shortCode)}`,
-      { method: "GET" },
+      `${getApiBase()}/${encodeURIComponent(shortCode)}`,
+      { method: "GET", headers: { Accept: "application/json" } },
     );
     renderResponse(result);
     if (result.status === 200 && result.body?.data?.longURL) {
-      window.open(result.body.data.longURL, "_blank", "noopener,noreferrer");
+      window.open(result.body.data.longURL, "_blank", "noopener, noreferrer");
     }
   } catch (err) {
     console.error(err);
