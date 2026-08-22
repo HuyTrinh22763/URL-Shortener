@@ -45,8 +45,8 @@
     app.use(authRouter);
     app.use("/api/v1/data", router);
 
-    // Frontend pages (login.html / playground.html) + shared assets
-    const frontendDir = path.join(__dirname, "../frontend");
+    // React SPA (frontend/dist)
+    const frontendDist = path.join(__dirname, "../frontend/dist");
     app.get("/", (req, res) => {
       if (req.isAuthenticated()) {
         return res.redirect(302, "/playground");
@@ -55,15 +55,15 @@
     });
 
     app.get("/login", (req, res) => {
-      res.sendFile(path.join(frontendDir, "login.html"));
+      res.sendFile(path.join(frontendDist, "index.html"));
     });
     app.get("/playground", (req, res) => {
       if (!req.isAuthenticated()) {
         return res.redirect(302, "/login");
       }
-      res.sendFile(path.join(frontendDir, "playground.html"));
+      res.sendFile(path.join(frontendDist, "index.html"));
     });
-    app.use(express.static(frontendDir));
+    app.use(express.static(frontendDist));
 
     app.get("/:shortCode", rateLimitRedirect, async (req, res) => {
       try {
