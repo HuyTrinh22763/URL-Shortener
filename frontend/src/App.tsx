@@ -1,5 +1,9 @@
+import LoginForm from "./components/LoginForm";
+import Playground from "./components/Playground";
+
 function App() {
-  return (<div></div>)
+  if (window.location.pathname === "/login") return <LoginForm />;
+  return <Playground />;
 }
 
-export default App
+export default App;
